@@ -42,7 +42,7 @@ class ModelWrapper:
 
     @property
     def modelMetrik(self):
-        return self.average_reward - 10 * self.model_plan.complexity
+        return self.average_reward / self.model_plan.complexity
 
 
 
@@ -141,8 +141,8 @@ def eveluateModel(env, modelwrapper):
 def rankModels(env, model_wrapper_list, n_winner_elems):
     n_by_avgMax = int((float(n_winner_elems) / 10.0) * 2.0)
     n_by_avgComp = int((float(n_winner_elems) / 10.0) * 8.0)
-    n_by_avgMax = 3
-    n_by_avgComp = 0
+    n_by_avgMax = 2
+    n_by_avgComp = 2
 
     for model_wrapper in model_wrapper_list:
         eveluateModel(env, model_wrapper)
@@ -150,15 +150,33 @@ def rankModels(env, model_wrapper_list, n_winner_elems):
     model_wrapper_list.sort(key=lambda elem: elem.modelMetrik2, reverse=True)
     if n_by_avgMax < len(model_wrapper_list):
         winner_by_avgMax = model_wrapper_list[:n_by_avgMax]
+        model_wrapper_list = model_wrapper_list[n_by_avgMax:]
     else:
         return model_wrapper_list
 
-    return winner_by_avgMax
+
+    model_wrapper_list.sort(key=lambda elem: elem.modelMetrik, reverse=True)
+    if n_by_avgComp < len(model_wrapper_list):
+        winner_by_avgComp = model_wrapper_list[:n_by_avgComp]
+    else:
+        return model_wrapper_list
+
+#    max_length = len(winner_by_avgMax) if len(winner_by_avgMax) > len(winner_by_avgComp) else len(winner_by_avgComp)
+#    for i in range(max_length):
+#        model_wrapper_list.append(winner_by_avgComp[i])
+#        model_wrapper_list.append(winner_by_avgComp[i])
+    model_wrapper_list.clear()
+    model_wrapper_list.append(winner_by_avgComp[0])
+    model_wrapper_list.append(winner_by_avgMax[0])
+    model_wrapper_list = model_wrapper_list + winner_by_avgComp[1:] + winner_by_avgMax[1:]
+
+    return model_wrapper_list
 
 
 def modelEvolution(model_wrapper_list, evoultion_mask):
     print("list length {} at model evolution intern".format(len(model_wrapper_list)))
     mutated_list = []
+    mutated_list = mutated_list + model_wrapper_list[0:2]
 
     for index, pattern in evoultion_mask.items():
         print("index {}".format(index))
@@ -249,7 +267,7 @@ def startEvolution(env, models_wrapper_list, n_evolution_steps, n_winner_elems, 
 if __name__ == '__main__':
     N_INITAL_MODELS = 5
     N_EVOLUTION_STEPS = 50
-    N_WINNER = 3
+    N_WINNER = 5
     N_EVOLUTIONS_PER_STEP = 1
 
 
@@ -262,7 +280,7 @@ if __name__ == '__main__':
     m_env = CartPoleSwingUpEnv()
     #print(m_env.action_space.shape[0])
     INITIAL_MODELS = [2, 2, 3, 3, 3]
-    EVOLUTION_MASK = {0: [2, 2], 1: [1, 1], 2: [1]}
+    EVOLUTION_MASK = {0: [2, 2], 1: [2, 2], 2: [1], 3: [1]}
 
     wrapped_models_list = createModels(INITIAL_MODELS, len(m_env.observation_space.high), m_env.action_space.shape[0])
     wrapped_models_list = startEvolution(m_env, wrapped_models_list, N_EVOLUTION_STEPS, len(EVOLUTION_MASK), EVOLUTION_MASK)

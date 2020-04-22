@@ -100,8 +100,6 @@ class MLP:
         print(random)
         print(len(self.connections))
         connection = self.connections[random]
-        if connection == self.connections[-1]:
-            print("last connection")
         if abs(connection[1].layerRank(self.layers) - connection[0].layerRank(self.layers)) == 1:
             layer = Layer()
             print("insert in new layer")
