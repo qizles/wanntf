@@ -11,7 +11,7 @@ from tensorboard import main as tb
 
 BIAS_VALUE = 1
 SHARED_WEIGHTS_ = {-2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2}
-SHARED_WEIGHTS = {-2, -1, -0.5, 0.5, 1, 2}
+SHARED_WEIGHTS = [-2, -1, -0.5, 0.5, 1, 2]
 
 EVOLUTION_NAME_CHOICES = ['add', 'insert', 'change']
 
@@ -58,40 +58,48 @@ def createModels(model_mask, n_inputs, n_outputs):
     return models
 
 
+def run_model(env, model, render=False, steps=1000):
+    last_reward = 0
+    observation = env.reset()
+    for i in range(steps):
+        has_been_plus = False
+        new_observation = np.append(observation, BIAS_VALUE)
+        model_output = model(new_observation)
+
+        if len(model_output) > 1:
+            observation, reward, done, info = env.step(np.argmax(model_output))
+        else:
+            observation, reward, done, info = env.step(model_output[0].numpy())
+            # reward += 1
+            #if reward < 0 and not has_been_plus:
+            #       reward = 0
+            #else:
+            #    has_been_plus = True
+        last_reward += reward
+
+        if render:
+            env.render()
+
+        if done:
+            last_reward -= 1000 - i
+            break
+    if render:
+        print(last_reward)
+    return last_reward
+
+
+
 def eveluateModel(env, modelwrapper):
-    tries_for_average = 10
+    tries_for_average = 3
     max_reward = -1000
     combined_reward = 0
     average = 0.0
     for weight in SHARED_WEIGHTS:
-        print("weight")
-        print(weight)
         modelwrapper.tf_model.changeSharedWeight(weight)
         average_sum = 0.0
         for _ in range(tries_for_average):
 
-            last_reward = 0
-            observation = env.reset()
-            for i in range(1000):
-                has_been_plus = False
-                new_observation = np.append(observation, BIAS_VALUE)
-                model_output = modelwrapper.tf_model(new_observation)
-
-                if len(model_output) > 1:
-                    observation, reward, done, info = env.step(np.argmax(model_output))
-                else:
-                    observation, reward, done, info = env.step(model_output[0].numpy())
-                    # reward += 1
-                    #if reward < 0 and not has_been_plus:
-                    #       reward = 0
-                    #else:
-                    #    has_been_plus = True
-                last_reward += reward
-
-                if done:
-                    last_reward -= 1000 - i
-                    break
-                # env.render()
+            last_reward = run_model(env, modelwrapper.tf_model, False)
             average_sum += last_reward
             # print(last_reward)
 
@@ -104,8 +112,6 @@ def eveluateModel(env, modelwrapper):
         if average > max_reward:
             max_reward = average
             modelwrapper.best_weight = weight
-            print("new max reward {} with weight {}".format(max_reward, weight))
-            modelwrapper.tf_model.printWeights()
         # if last_reward < 0:
          #   last_reward = 1
 
@@ -115,6 +121,8 @@ def eveluateModel(env, modelwrapper):
     modelwrapper.max_reward = max_reward
     modelwrapper.average_reward = combined_reward / len(SHARED_WEIGHTS)
 
+
+"""
     print("scores")
     print(modelwrapper.tf_model)
     print(modelwrapper.max_reward)
@@ -127,6 +135,7 @@ def eveluateModel(env, modelwrapper):
 
 
     print("")
+"""
 
 
 def rankModels(env, model_wrapper_list, n_winner_elems):
@@ -200,8 +209,11 @@ def startEvolution(env, models_wrapper_list, n_evolution_steps, n_winner_elems, 
         print("rank models")
         print("")
         models_wrapper_list = rankModels(env, models_wrapper_list, n_winner_elems)
+        winner = models_wrapper_list[0]
+        winner.tf_model.changeSharedWeight(winner.best_weight)
+    
+        print("")
         print("list length {} at {} after rank".format(len(models_wrapper_list), i))
-
 
         winner = models_wrapper_list[0]
         winner.tf_model.changeSharedWeight(winner.best_weight)
@@ -213,8 +225,10 @@ def startEvolution(env, models_wrapper_list, n_evolution_steps, n_winner_elems, 
         print(winner.modelMetrik2)
         print("best weight")
         print(winner.best_weight)
-        winner.tf_model.printWeights()
-        showWinner(env, winner.tf_model)
+        for _ in range(3):
+            reward = run_model(env, winner.tf_model, True)
+            print("winner reward {}".format(reward))
+        env.close()
         print("")
         print("model evolution")
         print("")
@@ -231,101 +245,10 @@ def startEvolution(env, models_wrapper_list, n_evolution_steps, n_winner_elems, 
     return models_wrapper_list
 
 
-def showWinner(env2, model2):
-    observation = env.reset()
-    total_reward = 0
-    for _ in range(1000):
-        new_observation = np.append(observation, BIAS_VALUE)
-        model_output = model(new_observation)
-
-        observation, reward, done, info = env.step(np.argmax(model_output))
-        env.render()
-        #print("winner reward")
-        #print(reward)
-        total_reward += reward
-
-        if done:
-            break
-    print("winner total rward {}".format(total_reward))
-
-    observation = env.reset()
-    total_reward = 0
-    for _ in range(1000):
-        new_observation = np.append(observation, BIAS_VALUE)
-        model_output = model(new_observation)
-
-        observation, reward, done, info = env.step(np.argmax(model_output))
-        env.render()
-        #print("winner reward")
-        #print(reward)
-        total_reward += reward
-
-        if done:
-            break
-    print("winner total rward {}".format(total_reward))
-
-
-    observation = env.reset()
-    total_reward = 0
-    for _ in range(1000):
-        new_observation = np.append(observation, BIAS_VALUE)
-        model_output = model(new_observation)
-
-        observation, reward, done, info = env.step(np.argmax(model_output))
-        env.render()
-        #print("winner reward")
-        #print(reward)
-        total_reward += reward
-
-        if done:
-            break
-    print("winner total rward {}".format(total_reward))
-
-
-
-    observation = env.reset()
-    total_reward = 0
-    for _ in range(1000):
-        new_observation = np.append(observation, BIAS_VALUE)
-        model_output = model(new_observation)
-
-        observation, reward, done, info = env.step(np.argmax(model_output))
-        env.render()
-        #print("winner reward")
-        #print(reward)
-        total_reward += reward
-
-        if done:
-            break
-    print("winner total rward {}".format(total_reward))
-
-
-    observation = env.reset()
-    total_reward = 0
-    for _ in range(1000):
-        new_observation = np.append(observation, BIAS_VALUE)
-        model_output = model(new_observation)
-
-        observation, reward, done, info = env.step(np.argmax(model_output))
-        env.render()
-        #print("winner reward")
-        #print(reward)
-        total_reward += reward
-
-        if done:
-            break
-    print("winner total rward {}".format(total_reward))
-
-
-
-    # env.close()
-
-
-
 
 if __name__ == '__main__':
     N_INITAL_MODELS = 5
-    N_EVOLUTION_STEPS = 10
+    N_EVOLUTION_STEPS = 50
     N_WINNER = 3
     N_EVOLUTIONS_PER_STEP = 1
 
@@ -350,7 +273,7 @@ if __name__ == '__main__':
     print(winner.model_plan)
     winner.tf_model.changeSharedWeight(winner.best_weight)
     input("enter to continue")
-    showWinner(m_env, winner.tf_model)
+    run_model(m_env, winner.tf_model, True)
 
     m_env.close()
     print("fin")

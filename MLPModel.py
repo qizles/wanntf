@@ -1,5 +1,5 @@
 import numpy as np
-import sys
+
 
 
 kreas_activation_functions = 'elu', 'exponential', 'hard_sigmoid', 'linear', 'relu', 'selu', 'sigmoid', 'softplus',\
