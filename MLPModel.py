@@ -20,8 +20,6 @@ def getActFunc(oldFunction = None):
 
 class Neuron:
     def __init__(self, layer, activation_function=None):
-        #
-        # self.connections = []
         if activation_function:
             self.activation = activation_function
         else:
@@ -30,9 +28,6 @@ class Neuron:
 
     def layerRank(self, layers):
         return layers.index(self.layer)
-
-    #def __hash__(self):
-    #   return id(self)
 
     def __lt__(self, other):
         return id(self) < id(other)
@@ -47,6 +42,8 @@ class MLP:
     def __init__(self, n_inputs, n_outputs, n_connections):
         self.layers = []
         self.connections = []
+
+        print("\nCreating Modelplan {}".format(id(self)))
 
 
         input_layer = Layer()
@@ -95,17 +92,13 @@ class MLP:
 
 
     def insertNode(self):
-        print("insert node in modelplan")
+        print("insert node in modelplan {}".format(id(self)))
         random = np.random.randint(0, len(self.connections))
-        print(random)
-        print(len(self.connections))
         connection = self.connections[random]
         if abs(connection[1].layerRank(self.layers) - connection[0].layerRank(self.layers)) == 1:
             layer = Layer()
-            print("insert in new layer")
             self.layers.insert(connection[0].layerRank(self.layers) + 1, layer)
         else:
-            print('insert in old layer')
             layer = self.layers[connection[0].layerRank(self.layers) + 1]
 
         newNode = Neuron(layer)
@@ -116,11 +109,10 @@ class MLP:
 
     def addConnection(self):
         neuron1 = self.neurons[np.random.randint(0, len(self.neurons))] # todo : why infinite loop when only choosing second partner in loop ?
-        print("add conncection to modelplan")
+        print("add conncection to modelplan {}".format(id(self)))
         max_tries = 20
         tries = 0
         while True:
-            print("looking for connection partners")
             neuron1 = self.neurons[np.random.randint(0, len(self.neurons))]
             neuron2 = self.neurons[np.random.randint(0, len(self.neurons))]
             if not neuron1 == neuron2 and not neuron1.layerRank(self.layers) == neuron2.layerRank(self.layers):
@@ -137,7 +129,7 @@ class MLP:
                 return
 
     def changeActivation(self):
-        print("change activation of modelplan")
+        print("change activation of modelplan {}".format(id(self)))
         max_tries = 20
         tries = 0
         while True:
@@ -148,6 +140,5 @@ class MLP:
             if tries > max_tries:
                 print("No possible candidate for activation change")
                 return
-        print('changed activation')
         neuron.activation = getActFunc(neuron.activation)
 

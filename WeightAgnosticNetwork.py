@@ -16,10 +16,9 @@ intial_games = 10000
 
 
 def customStepFunction(value):
-    # todo : make float tensor out of reuturn
     if value < 0:
-        return -1
-    return 1
+        return tf.Variable(-1, dtype=tf.float64)
+    return tf.Variable(1, dtype=tf.float64)
 
 
 def gaussian(x):
@@ -47,8 +46,8 @@ class CustomModel(Model):
         self.custom_layers = []
 
         self.input_node_ids = [elem for elem in model_plan.layers[0].nodes]
-
-
+        print("they are the same lists : {}".format(self.input_node_ids == model_plan.layers[0].nodes))
+        self.input_node_ids = model_plan.layers[0].nodes if self.input_node_ids == model_plan.layers[0].nodes else self.input_node_ids
 
 
         for layer in model_plan.layers[1:]:  # for all layers except input layer
@@ -63,24 +62,26 @@ class CustomModel(Model):
             layer.changeSharedWeight(shared_weight)
 
     def printWeights(self):
-        print("print weights of tf model")
+        self.__str__()
 
-
+    def __str__(self):
+        print("weights of tf model {}".format(self))
         weights = []
         for layer in self.custom_layers:
             weights.append(layer.getWeights())
         print(weights)
+        return ""
 
     def call(self, inputs, training=None, mask=None):
-
+        # create dictionary of inputs with corresponding ids of input layer
         inputs = dict(zip(self.input_node_ids, inputs))
+        # and propagate the same dict through all layers
         for layer in self.custom_layers:
-
             inputs = layer(inputs)
+        # return only outputs of last layer, internal structure is now unneccessary
         output = []
         for node in self.last_layer.nodes:
             output.append(inputs[node])
-
         return output
 
 
@@ -93,27 +94,25 @@ class CustomLayer(layers.Layer):
 
         # neurons that shall be in the layer
         for neuron in neurons:
-            # should get all connections coming into a single neuron
+            # get all connections coming into this neuron from the model plan
             neuron_connections = [item for item in connections if item[1] == neuron]
-            # print("neurcon connections")
-            # print(neuron_connections)
-            # neuron_connections = connections.get(neuron.id)
 
-            # now we need to add the connections to our layer
+
+            # now we need to add the connections with weight to our neuron
+            # we create a dictionary with the neuron from which the connection comes from as the key
+            # and store the weight alongside
             curr_connections = {}
+
             for nc in neuron_connections:
                 if shared_weight:
                     curr_connections[nc[0]] = tf.Variable(shared_weight, dtype=tf.float64)
                 else:
-                    print("should not occur")
-                    exit(1)
                     curr_connections[nc[0]] = tf.Variable(initializer=tf.random_normal_initializer(mean=0.0, stddev=0.05, seed=None), dtype=tf.float64)
             self.nodes[neuron] = curr_connections
 
-            # self.act_funcs[neuron] = tf.keras.activations.deserialize(neuron.activation)
+            # and define a activation function for every neuron in this layer
             self.act_funcs[neuron] = activations_dict[neuron.activation]
 
-            # print("custom layer created")
 
     def changeSharedWeight(self, shared_weight):
         for node, connections in self.nodes.items():
@@ -129,10 +128,10 @@ class CustomLayer(layers.Layer):
 
 
     def call(self, inputs, **kwargs):
-        weights_list = []
+        # we look at every neuron in our layer
         for node, connections in self.nodes.items():
             value = tf.Variable(0, dtype=tf.float64)
-            #test if neuron has multiple connections
+            # and sum up every in going input
             for nc, weight in connections.items():
                 if inputs.get(nc).numpy() == 1 or inputs.get(nc).numpy() == -1:
 
@@ -140,10 +139,9 @@ class CustomLayer(layers.Layer):
 
                 else:
                     value.assign_add(inputs.get(nc) * weight)
-                weights_list.append(weight)
+            # and use the combined value to create the output for this neuron
+            # and put it to the previous output to make them accessible for following layers,
             value = self.act_funcs[node](value)
             inputs[node] = value
-        # print("weights")
-        # print(weights_list)
         return inputs
 
