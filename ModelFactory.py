@@ -130,11 +130,11 @@ def eveluateModel(env, modelwrapper):
 def rankModels(env, model_wrapper_list, n_winner_elems):
     # a ratio of 80 / 20 as in the paper makes send when populations get bigger,
     # we decided for 50 / 50 in our tirals to see better results
-    n_by_avgMax = int((float(n_winner_elems) / 10.0) * 5.0)
-    n_by_avgComp = int((float(n_winner_elems) / 10.0) * 5.0)
+    n_by_avgMax = int((float(n_winner_elems-1) / 10.0) * 5.0)
+    n_by_avgComp = int((float(n_winner_elems-1) / 10.0) * 5.0)
 
 
-    n_by_avgMax += 1 if n_by_avgMax + n_by_avgComp < n_winner_elems else 0
+    n_by_avgMax += 1 if n_by_avgMax + n_by_avgComp < n_winner_elems-1 else 0
 
     # if the previos winners (first 2 list elements) haven't been ranked before, include them in ranking
     # otherwise skip for performance reasons
@@ -162,7 +162,7 @@ def rankModels(env, model_wrapper_list, n_winner_elems):
     new_model_wrapper_list.append(winner_by_avgComp[0])
     new_model_wrapper_list.append(winner_by_avgMax[0])
     new_model_wrapper_list = new_model_wrapper_list + winner_by_avgComp[1:] + winner_by_avgMax[1:]
-    if len(model_wrapper_list) >= 1:
+    for _ in range(n_winner_elems - len(winner_by_avgMax) - len(winner_by_avgComp)):
         print("append random")
         new_model_wrapper_list.append(model_wrapper_list[np.random.randint(0, len(model_wrapper_list))])
     else:
@@ -238,7 +238,7 @@ def startEvolution(env, models_wrapper_list, n_evolution_steps, n_winner_elems, 
 
 if __name__ == '__main__':
     N_INITAL_MODELS = 5
-    N_EVOLUTION_STEPS = 50
+    N_EVOLUTION_STEPS = 1024
     N_WINNER = 5
     N_EVOLUTIONS_PER_STEP = 1
 
@@ -252,10 +252,10 @@ if __name__ == '__main__':
     m_env = CartPoleSwingUpEnv()
     #print(m_env.action_space.shape[0])
     INITIAL_MODELS = [2, 2, 3, 3, 3]
-    EVOLUTION_MASK = {0: [3, 2], 1: [2, 1], 2: [2], 3: [1], 4: [3]}
+    EVOLUTION_MASK = {0: [3, 2, 2], 1: [2, 2], 2: [2], 3: [1], 4: [3]}
 
     wrapped_models_list = createModels(INITIAL_MODELS, len(m_env.observation_space.high), m_env.action_space.shape[0])
-    wrapped_models_list = startEvolution(m_env, wrapped_models_list, N_EVOLUTION_STEPS, len(EVOLUTION_MASK)-1, EVOLUTION_MASK)
+    wrapped_models_list = startEvolution(m_env, wrapped_models_list, N_EVOLUTION_STEPS, len(EVOLUTION_MASK), EVOLUTION_MASK)
     print("WINNER NETWORK")
 
     winner = wrapped_models_list[1]
