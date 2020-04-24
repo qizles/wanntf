@@ -143,28 +143,29 @@ def rankModels(env, model_wrapper_list, n_winner_elems):
     for model_wrapper in model_wrapper_list[begin:]:
         eveluateModel(env, model_wrapper)
 
+    model_wrapper_list.sort(key=lambda elem: elem.modelMetrik, reverse=True)
+    if n_by_avgComp < len(model_wrapper_list):
+        winner_by_avgComp = model_wrapper_list[:n_by_avgComp]
+        model_wrapper_list = model_wrapper_list[n_by_avgComp:]
+    else:
+        return model_wrapper_list
+
     model_wrapper_list.sort(key=lambda elem: elem.modelMetrik2, reverse=True)
     if n_by_avgMax < len(model_wrapper_list):
         winner_by_avgMax = model_wrapper_list[:n_by_avgMax]
         model_wrapper_list = model_wrapper_list[n_by_avgMax:]
     else:
-        return model_wrapper_list
+        return winner_by_avgComp + model_wrapper_list
 
 
-    model_wrapper_list.sort(key=lambda elem: elem.modelMetrik, reverse=True)
-    if n_by_avgComp < len(model_wrapper_list):
-        winner_by_avgComp = model_wrapper_list[:n_by_avgComp]
-        model_wrapper_list = model_wrapper_list[n_by_avgComp:]
 
-    else:
-        return winner_by_avgMax + model_wrapper_list
 
     new_model_wrapper_list = []
     new_model_wrapper_list.append(winner_by_avgComp[0])
     new_model_wrapper_list.append(winner_by_avgMax[0])
     new_model_wrapper_list = new_model_wrapper_list + winner_by_avgComp[1:] + winner_by_avgMax[1:]
     for _ in range(n_winner_elems - len(winner_by_avgMax) - len(winner_by_avgComp)):
-        if len(model_wrapper_list) > 1:
+        if len(model_wrapper_list) >= 1:
             new_model_wrapper_list.append(model_wrapper_list[np.random.randint(0, len(model_wrapper_list))])
         else:
             break
