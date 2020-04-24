@@ -45,9 +45,7 @@ class CustomModel(Model):
         super(CustomModel, self).__init__()
         self.custom_layers = []
 
-        self.input_node_ids = [elem for elem in model_plan.layers[0].nodes]
-        print("they are the same lists : {}".format(self.input_node_ids == model_plan.layers[0].nodes))
-        self.input_node_ids = model_plan.layers[0].nodes if self.input_node_ids == model_plan.layers[0].nodes else self.input_node_ids
+        self.input_node_ids = model_plan.layers[0].nodes
 
 
         for layer in model_plan.layers[1:]:  # for all layers except input layer

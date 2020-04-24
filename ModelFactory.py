@@ -128,15 +128,18 @@ def eveluateModel(env, modelwrapper):
 
 
 def rankModels(env, model_wrapper_list, n_winner_elems):
+    # a ratio of 80 / 20 as in the paper makes send when populations get bigger,
+    # we decided for 50 / 50 in our tirals to see better results
     n_by_avgMax = int((float(n_winner_elems) / 10.0) * 5.0)
     n_by_avgComp = int((float(n_winner_elems) / 10.0) * 5.0)
 
 
     n_by_avgMax += 1 if n_by_avgMax + n_by_avgComp < n_winner_elems else 0
 
-    print("n by avg max : {} , n by avg comp : {}, n winner elems : {}".format(n_by_avgMax, n_by_avgComp, n_winner_elems))
-
-    for model_wrapper in model_wrapper_list[2:]:
+    # if the previos winners (first 2 list elements) haven't been ranked before, include them in ranking
+    # otherwise skip for performance reasons
+    begin = 2 if bool(model_wrapper_list[0].modelMetrik2 + model_wrapper_list[1].modelMetrik2) else 0
+    for model_wrapper in model_wrapper_list[begin:]:
         eveluateModel(env, model_wrapper)
 
     model_wrapper_list.sort(key=lambda elem: elem.modelMetrik2, reverse=True)
@@ -155,17 +158,15 @@ def rankModels(env, model_wrapper_list, n_winner_elems):
     else:
         return winner_by_avgMax + model_wrapper_list
 
-#    max_length = len(winner_by_avgMax) if len(winner_by_avgMax) > len(winner_by_avgComp) else len(winner_by_avgComp)
-#    for i in range(max_length):
-#        model_wrapper_list.append(winner_by_avgComp[i])
-#        model_wrapper_list.append(winner_by_avgComp[i])
     new_model_wrapper_list = []
     new_model_wrapper_list.append(winner_by_avgComp[0])
     new_model_wrapper_list.append(winner_by_avgMax[0])
-    new_model_wrapper_list = model_wrapper_list + winner_by_avgComp[1:] + winner_by_avgMax[1:]
-    if len(model_wrapper_list <= 2):
-        print("only {} looser model in list".format(len(model_wrapper_list)))
-    new_model_wrapper_list.append(model_wrapper_list[np.random.randint(0, len(model_wrapper_list))])
+    new_model_wrapper_list = new_model_wrapper_list + winner_by_avgComp[1:] + winner_by_avgMax[1:]
+    if len(model_wrapper_list) >= 1:
+        print("append random")
+        new_model_wrapper_list.append(model_wrapper_list[np.random.randint(0, len(model_wrapper_list))])
+    else:
+        print("nothing left")
 
     return new_model_wrapper_list
 
@@ -177,6 +178,7 @@ def modelEvolution(model_wrapper_list, evoultion_mask):
 
     # and mutate the rest based on the mask
     for index, pattern in evoultion_mask.items():
+        print("len of list before mutation: {}".format(len(model_wrapper_list)))
         mutate_candidate = model_wrapper_list[index]
         for mutations in pattern:
             mutated = ModelWrapper()
