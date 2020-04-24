@@ -128,13 +128,14 @@ def eveluateModel(env, modelwrapper):
 
 
 def rankModels(env, model_wrapper_list, n_winner_elems):
+    RANDOM_ELEMENTS = 1
     # a ratio of 80 / 20 as in the paper makes send when populations get bigger,
     # we decided for 50 / 50 in our tirals to see better results
-    n_by_avgMax = int((float(n_winner_elems-1) / 10.0) * 5.0)
-    n_by_avgComp = int((float(n_winner_elems-1) / 10.0) * 5.0)
+    n_by_avgMax = int((float(n_winner_elems-RANDOM_ELEMENTS) / 10.0) * 5.0)
+    n_by_avgComp = int((float(n_winner_elems-RANDOM_ELEMENTS) / 10.0) * 5.0)
 
 
-    n_by_avgMax += 1 if n_by_avgMax + n_by_avgComp < n_winner_elems-1 else 0
+    n_by_avgComp += 1 if n_by_avgMax + n_by_avgComp < n_winner_elems-RANDOM_ELEMENTS else 0
 
     # if the previos winners (first 2 list elements) haven't been ranked before, include them in ranking
     # otherwise skip for performance reasons
@@ -163,11 +164,10 @@ def rankModels(env, model_wrapper_list, n_winner_elems):
     new_model_wrapper_list.append(winner_by_avgMax[0])
     new_model_wrapper_list = new_model_wrapper_list + winner_by_avgComp[1:] + winner_by_avgMax[1:]
     for _ in range(n_winner_elems - len(winner_by_avgMax) - len(winner_by_avgComp)):
-        print("append random")
-        new_model_wrapper_list.append(model_wrapper_list[np.random.randint(0, len(model_wrapper_list))])
-    else:
-        print("nothing left")
-
+        if len(model_wrapper_list) > 1:
+            new_model_wrapper_list.append(model_wrapper_list[np.random.randint(0, len(model_wrapper_list))])
+        else:
+            break
     return new_model_wrapper_list
 
 
