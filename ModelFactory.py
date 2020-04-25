@@ -137,22 +137,32 @@ def rankModels(env, model_wrapper_list, n_winner_elems):
 
     n_by_avgComp += 1 if n_by_avgMax + n_by_avgComp < n_winner_elems-RANDOM_ELEMENTS else 0
 
-    # if the previos winners (first 2 list elements) haven't been ranked before, include them in ranking
+    # if the previos winners (first 2 list elements) haven't been ranked before (first run), include them in ranking
     # otherwise skip for performance reasons
     begin = 2 if bool(model_wrapper_list[0].modelMetrik2 + model_wrapper_list[1].modelMetrik2) else 0
     for model_wrapper in model_wrapper_list[begin:]:
         eveluateModel(env, model_wrapper)
 
     model_wrapper_list.sort(key=lambda elem: elem.modelMetrik, reverse=True)
-    if n_by_avgComp < len(model_wrapper_list):
-        winner_by_avgComp = model_wrapper_list[:n_by_avgComp]
+    winner_by_avgComp = []
+    winner_by_avgComp.append(model_wrapper_list[0])
+    model_wrapper_list = model_wrapper_list[1:]
+
+    model_wrapper_list.sort(key=lambda elem: elem.modelMetrik2, reverse=True)
+    winner_by_avgMax = []
+    winner_by_avgMax.append(model_wrapper_list[0])
+    model_wrapper_list = model_wrapper_list[1:]
+
+    model_wrapper_list.sort(key=lambda elem: elem.modelMetrik, reverse=True)
+    if n_by_avgComp-1 < len(model_wrapper_list):
+        winner_by_avgComp = winner_by_avgComp + model_wrapper_list[:n_by_avgComp]
         model_wrapper_list = model_wrapper_list[n_by_avgComp:]
     else:
         return model_wrapper_list
 
     model_wrapper_list.sort(key=lambda elem: elem.modelMetrik2, reverse=True)
-    if n_by_avgMax < len(model_wrapper_list):
-        winner_by_avgMax = model_wrapper_list[:n_by_avgMax]
+    if n_by_avgMax-1 < len(model_wrapper_list):
+        winner_by_avgMax = winner_by_avgMax + model_wrapper_list[:n_by_avgMax]
         model_wrapper_list = model_wrapper_list[n_by_avgMax:]
     else:
         return winner_by_avgComp + model_wrapper_list
@@ -179,7 +189,8 @@ def modelEvolution(model_wrapper_list, evoultion_mask):
 
     # and mutate the rest based on the mask
     for index, pattern in evoultion_mask.items():
-        print("len of list before mutation: {}".format(len(model_wrapper_list)))
+        if index >= len(model_wrapper_list):
+            continue
         mutate_candidate = model_wrapper_list[index]
         for mutations in pattern:
             mutated = ModelWrapper()
@@ -210,8 +221,8 @@ def startEvolution(env, models_wrapper_list, n_evolution_steps, n_winner_elems, 
         print("")
         print("Winner of Step {} by Complexity is : {}".format(i, id(winner_compl.tf_model)))
         print(winner_compl)
-        for _ in range(3):
-            run_model(env, winner_compl.tf_model, True)
+        # for _ in range(3):
+        #    run_model(env, winner_compl.tf_model, True)
 
         winner_max = models_wrapper_list[1]
         winner_max.tf_model.changeSharedWeight(winner_max.best_weight)
@@ -221,7 +232,7 @@ def startEvolution(env, models_wrapper_list, n_evolution_steps, n_winner_elems, 
         print("")
         print("Winner of Step {} by Maximum :".format(i))
         print(winner_max)
-        for _ in range(3):
+        for _ in range(1):
             run_model(env, winner_compl.tf_model, True)
         env.close()
         print("")
@@ -243,8 +254,6 @@ if __name__ == '__main__':
     N_WINNER = 5
     N_EVOLUTIONS_PER_STEP = 1
 
-
-
     tf.keras.backend.set_floatx('float64')
 
 
@@ -252,7 +261,7 @@ if __name__ == '__main__':
     # m_env = gym.make('CartPole-v0')
     m_env = CartPoleSwingUpEnv()
     #print(m_env.action_space.shape[0])
-    INITIAL_MODELS = [2, 2, 3, 3, 3]
+    INITIAL_MODELS = [2, 2, 3, 3, 3, 3]
     EVOLUTION_MASK = {0: [3, 2, 2], 1: [2, 2], 2: [2], 3: [1], 4: [3]}
 
     wrapped_models_list = createModels(INITIAL_MODELS, len(m_env.observation_space.high), m_env.action_space.shape[0])
@@ -264,11 +273,12 @@ if __name__ == '__main__':
     print(winner)
     print(winner.model_plan)
 
+    while True:
 
-
-
-    input("enter to continue")
-    run_model(m_env, winner.tf_model, True)
+        run_model(m_env, winner.tf_model, True)
+        inp = input("enter to continue")
+        if bool(inp):
+            break
 
     m_env.close()
     print("fin")
